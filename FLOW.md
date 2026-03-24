@@ -332,6 +332,9 @@ Arc reactor animation stops, "Analysis Complete!" screen appears with total time
 ### 🛡️ Category 2: Data Protection (R11–R18)
 *Weight: 16% of static score*
 
+multilodel-detection in code?
+
+
 | ID | Rule | Severity | Points | What it detects |
 |---|---|---|---|---|
 | R11 | No Hardcoded Secrets | 🔴 Critical | 10 | **Negative rule** — detects: `SECRET="abc123"`, `sk-xxxx`, `mongodb+srv://user:pass@`, `Bearer eyJ...` |
