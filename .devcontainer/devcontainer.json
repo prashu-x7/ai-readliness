@@ -1,10 +1,13 @@
 {
   "name": "AI Readiness Assessment",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspace",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
   "forwardPorts": [8000, 5173, 27017],
   "postCreateCommand": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install",
+  "postStartCommand": "docker run -d --name mongodb -p 27017:27017 mongo:7 2>/dev/null || true",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -16,7 +19,8 @@
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "terminal.integrated.defaultProfile.linux": "bash"
       }
     }
   }
