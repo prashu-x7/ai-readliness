@@ -14,9 +14,11 @@ app = FastAPI(
     description="App Reader — AI Readiness Assessment Platform with 9-Layer Analysis",
 )
 
+origins = ["*"] if settings.CORS_ALLOW_ALL else settings.CORS_ORIGINS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
