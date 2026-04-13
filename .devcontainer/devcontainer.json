@@ -2,10 +2,19 @@
   "name": "AI Readiness Assessment",
   "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
   },
-  "forwardPorts": [8000, 5173],
-  "postCreateCommand": "cd /workspaces/ai-readliness/backend && pip install -r requirements.txt && cd /workspaces/ai-readliness/frontend && npm install",
+  "forwardPorts": [
+    8000,
+    5173,
+    27017
+  ],
+  "postCreateCommand": "cd /workspaces/ai-readiness-assessment/backend && pip install -r requirements.txt && cd /workspaces/ai-readiness-assessment/frontend && npm install",
+  "remoteEnv": {
+    "GROQ_API_KEY": "${localEnv:GROQ_API_KEY}"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -13,7 +22,8 @@
         "ms-python.vscode-pylance",
         "dbaeumer.vscode-eslint",
         "bradlc.vscode-tailwindcss",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "mongodb.mongodb-vscode"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
