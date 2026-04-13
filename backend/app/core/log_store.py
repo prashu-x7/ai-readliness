@@ -32,17 +32,46 @@ def save_assessment_log(
     log_dir = LOGS_ROOT / assessment_id
     _ensure_dir(log_dir)
 
-    report_path = log_dir / "report.json"
+    # Split reports based on our new architecture
+    report2 = report.pop("report2", {})
+    merged_report = report.pop("merged_report", {})
+    report1 = report # the rest is report 1
+
+    report1_path = log_dir / "report1.json"
+    report2_path = log_dir / "report2.json"
+    report3_path = log_dir / "report3_merged.json"
+    
     try:
-        with open(report_path, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=2, default=str)
+        with open(report1_path, "w", encoding="utf-8") as f:
+            json.dump(report1, f, indent=2, default=str)
+        with open(report2_path, "w", encoding="utf-8") as f:
+            json.dump(report2, f, indent=2, default=str)
+        with open(report3_path, "w", encoding="utf-8") as f:
+            json.dump(merged_report, f, indent=2, default=str)
     except Exception as e:
-        logger.error(f"Failed to save report.json for {assessment_id}: {e}")
+        logger.error(f"Failed to save JSON reports for {assessment_id}: {e}")
+
+    # Generate training data explicitly
+    training_data_path = log_dir / "training_data.jsonl"
+    try:
+        training_record = {
+            "input_source": source_value,
+            "report1_static": {k: v for k, v in report1.items() if k not in ["executive_summary", "blockers"]},
+            "report2_ai": report2,
+            "final_merged": merged_report,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        with open(training_data_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(training_record, default=str) + "\n")
+    except Exception as e:
+        logger.error(f"Failed to save training_data.jsonl for {assessment_id}: {e}")
 
     summary_path = log_dir / "summary.txt"
+    # Use merged report for text summary if available, else report1
+    summary_data = merged_report if merged_report else report1
     try:
         with open(summary_path, "w", encoding="utf-8") as f:
-            f.write(_build_text_summary(assessment_id, user_id, source_value, source_type, score, status, report))
+            f.write(_build_text_summary(assessment_id, user_id, source_value, source_type, score, status, summary_data))
     except Exception as e:
         logger.error(f"Failed to save summary.txt for {assessment_id}: {e}")
 
@@ -57,7 +86,10 @@ def save_assessment_log(
             "status":        status,
             "saved_at":      datetime.now(timezone.utc).isoformat(),
             "files": {
-                "report":  str(report_path),
+                "report1": str(report1_path),
+                "report2": str(report2_path),
+                "report3": str(report3_path),
+                "training": str(training_data_path),
                 "summary": str(summary_path),
             },
         }

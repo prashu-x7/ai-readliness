@@ -80,20 +80,26 @@ def fuse_scores(
     obs: dict,
     project_info: dict,
 ) -> dict:
+    cat_scores = static.get("category_scores", {})
+    
+    # Safely get a category score, defaulting to the overall static_score
+    def _cget(name: str) -> int:
+        return cat_scores.get(name, static.get("static_score", 0))
+
     layer_scores = {
-        "static_rules":  static["static_score"],
-        "import_graph":  graph["cohesion_score"],
-        "ast_metrics":   ast["ast_score"],
-        "dependencies":  deps["dependency_score"],
-        "test_coverage": tests["test_score"],
-        "api_quality":   api["api_score"],
-        "tech_debt":     debt["debt_score"],
-        "env_maturity":  env["env_score"],
-        "observability": obs["observability_score"],
+        "security":        _cget("Security & Auth"),
+        "data_protection": _cget("Data Protection"),
+        "api_quality":     int((_cget("API Quality") + api.get("api_score", 0)) / 2),
+        "infrastructure":  int((_cget("Infrastructure") + deps.get("dependency_score", 0) + env.get("env_score", 0)) / 3),
+        "code_quality":    int((_cget("Code Quality") + ast.get("ast_score", 0) + tests.get("test_score", 0) + debt.get("debt_score", 0)) / 4),
+        "ai_ml_readiness": _cget("AI/ML Readiness"),
+        "performance":     _cget("Performance"),
+        "compliance":      int((_cget("Compliance") + obs.get("observability_score", 0)) / 2),
+        "architecture":    graph.get("cohesion_score", 0),
     }
 
-    weighted = sum(layer_scores[k] * LAYER_WEIGHTS[k] for k in layer_scores)
-    raw_score = int(weighted / 100)
+    # Recalculate raw score as the simple average of all 9 layers
+    raw_score = int(sum(layer_scores.values()) / 9)
 
     lang_diversity = project_info.get("language_diversity", 1)
     if lang_diversity > 4:

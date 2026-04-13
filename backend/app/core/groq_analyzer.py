@@ -12,47 +12,61 @@ logger = logging.getLogger(__name__)
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 SYSTEM_PROMPT = """You are an expert code auditor specializing in AI readiness assessment.
-Analyze the provided codebase summary and evaluate it across these 9 dimensions:
-1. Security & Authentication
-2. Data Protection & Privacy
-3. API Quality & Design
-4. Infrastructure & DevOps
-5. Code Quality & Maintainability
-6. AI/ML Integration Readiness
-7. Performance & Scalability
-8. Compliance & Observability
-9. Architecture & Modularity
+Analyze the provided codebase summary.
 
-For each dimension, provide:
-- score: 0-100
-- findings: list of specific observations (what exists and what's missing)
-- risks: list of risks with severity (critical/high/medium/low)
-- recommendations: actionable improvement steps
+First, reconstruct the mental map of the directory structure and how files connect.
+Evaluate the architecture and explicitly answer the following questions:
+- Is the application properly connected and modular?
+- Is it ready for AI integration (e.g., vector databases, LLM context windows, RAG pipelines)?
+- Does the code have distinct separation of concerns (MVC, Services, Data Layers)?
+- Are the entity data models clearly defined and extensible?
+- How uniquely testable is this codebase in its current state?
 
-Also provide:
-- overall_score: 0-100
-- executive_summary: 2-3 sentence overview
-- top_risks: the 5 most critical risks
-- roadmap: ordered list of improvements to reach 80+ score
+Then, evaluate the codebase across these 13 dimensions (9 static core + 4 semantic AI-specific):
+1. security
+2. data_protection
+3. api_quality
+4. infrastructure
+5. code_quality
+6. ai_ml_readiness
+7. performance
+8. compliance
+9. architecture
+10. semantic_maintainability       (Is the code logic understandable by an AI?)
+11. generative_ai_mapping          (Which features can easily plug into GenAI?)
+12. data_processing_pipelines      (Can the data layer pipe dynamically to vector stores?)
+13. business_logic_modeling        (Are core concepts strictly enforced and clean?)
 
-Respond ONLY with valid JSON matching this schema:
+For each dimension, explicitly clarify:
+- The top structural strengths and weaknesses.
+- The exact impact on future AI feature expansion.
+- Detailed connectivity or coupling issues affecting this dimension.
+- Provide a clear, actionable conclusion.
+
+Respond ONLY with valid JSON matching this schema exactly:
 {
-  "overall_score": int,
-  "executive_summary": string,
-  "dimensions": {
-    "security": {"score": int, "findings": [string], "risks": [{"text": string, "severity": string}], "recommendations": [string]},
-    "data_protection": {...},
-    "api_quality": {...},
-    "infrastructure": {...},
-    "code_quality": {...},
-    "ai_ml_readiness": {...},
-    "performance": {...},
-    "compliance": {...},
-    "architecture": {...}
+  "overall_score": int (0-100),
+  "executive_summary": "string",
+  "architecture_assessment": {
+    "directory_structure_map": "Describe the directory tree and organization",
+    "connectivity_status": "Describe how files interact (e.g. standard MVC, decoupled)",
+    "ai_integration_readiness": "Specific evaluation of whether AI can be integrated here easily"
   },
-  "top_risks": [{"text": string, "severity": string}],
-  "roadmap": [string]
+  "dimensions": {
+    "security": {
+      "score": int,
+      "conclusion": "string",
+      "strengths": ["string"],
+      "weaknesses": ["string"],
+      "ai_readiness_impact": "string",
+      "connectivity_issues": ["string"]
+    }
+    // REPEAT EXACTLY for all 13 dimensions
+  },
+  "top_risks": [{"text": "string", "severity": "critical"|"high"|"medium"|"low", "category": "string"}],
+  "roadmap": [{"step": int, "action": "string", "impact": "High"}]
 }"""
+
 
 def _build_code_summary(file_entries: list[dict], classification: dict) -> str:
     """Build a compact summary of the codebase for the LLM prompt."""
@@ -61,6 +75,13 @@ def _build_code_summary(file_entries: list[dict], classification: dict) -> str:
     lines.append(f"Languages: {', '.join(classification.get('languages', []))}")
     lines.append(f"Frameworks: {', '.join(classification.get('frameworks', []))}")
     lines.append(f"Total Files: {len(file_entries)}")
+    lines.append("")
+    
+    # Provide the raw directory structure map clearly
+    lines.append("=== RAW DIRECTORY STRUCTURE MAP ===")
+    for entry in file_entries:
+        lines.append(entry.get("path", "unknown"))
+    lines.append("===================================")
     lines.append("")
 
     for entry in file_entries[:60]:
